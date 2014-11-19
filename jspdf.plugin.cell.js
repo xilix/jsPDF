@@ -188,12 +188,14 @@
 
         var headerNames = [],
             headerPrompts = [],
+            headersToPrint = [],
             header,
             i,
             ln,
             cln,
             columnMatrix = {},
             columnWidths = {},
+            columnSpans = {},
             columnData,
             column,
             columnMinWidths = [],
@@ -254,6 +256,13 @@
                 headerNames.push(header.name);
                 headerPrompts.push(header.prompt);
                 columnWidths[header.name] = header.width *px2pt;
+                if (!header.meldWithLastRow) {
+                  headersToPrint.push(header);
+                  headersToPrint[headersToPrint.length - 1].colspan = 0;
+                  headersToPrint[headersToPrint.length - 1].headerWidth = 0;
+                }
+                headersToPrint[headersToPrint.length - 1].colspan += 1;
+                headersToPrint[headersToPrint.length - 1].headerWidth += columnWidths[header.name];
             }
 
         } else {
@@ -286,17 +295,29 @@
                 // get final column width
                 columnWidths[header] = jsPDFAPI.arrayMax(columnMinWidths);
             }
+            headersToPrint = headersToPrint.map(function (h) {
+              return h.headerWidth = columnWidths[h.name] * h.colspan; 
+            });
         }
 
         // -- Construct the table
 
         if (printHeaders) {
-            var lineHeight = this.calculateLineHeight(headerNames, columnWidths, headerPrompts.length?headerPrompts:headerNames);
+            var lineHeight = this.calculateLineHeight(
+              headersToPrint.map(function (h) { return h.name; }),
+              headersToPrint.map(function (h) { return h.width; }),
+              headersToPrint.map(function (h) { return (h.prompt ? h.prompt : h.name); })
+            );
 
             // Construct the header row
-            for (i = 0, ln = headerNames.length; i < ln; i += 1) {
-                header = headerNames[i];
-                tableHeaderConfigs.push([x, y, columnWidths[header], lineHeight, String(headerPrompts.length ? headerPrompts[i] : header)]);
+            for (i = 0, ln = headersToPrint.length; i < ln; i += 1) {
+              tableHeaderConfigs.push(
+                [
+                  x, y,
+                  headersToPrint[i].headerWidth, lineHeight,
+                  String(headersToPrint[i].prompt ? headersToPrint[i].prompt : headersToPrint[i].name)
+                ]
+              );
             }
 
             // Store the table header config

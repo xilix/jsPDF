@@ -272,11 +272,20 @@
 		table_with = table.clientWidth;
 		while (i < l) {
 			cell = table.rows[0].cells[i];
-			headers[i] = {
-				name : cell.textContent.toLowerCase().replace(/\s+/g, ''),
-				prompt : cell.textContent.replace(/\r?\n/g, ''),
-				width : (cell.clientWidth / table_with) * renderer.pdf.internal.pageSize.width
-			};
+			j = 0;
+			do {
+ 				headers.push({
+					meldWithLastRow: (j > 0),
+					name : [
+						cell.textContent.toLowerCase().replace(/\s+/g, ''),
+                                        	(j > 0 ? ['_jspdfColspan', j].join('') : '')
+					].join(''),
+					prompt : cell.textContent.replace(/\r?\n/g, ''),
+					width : (cell.clientWidth / table_with) * renderer.pdf.internal.pageSize.width / (cell.getAttribute('colspan') ? parseInt(cell.getAttribute('colspan'), 10) : 1)
+				});
+				j++;
+			} while (cell.getAttribute('colspan') && parseInt(cell.getAttribute('colspan'), 10) > j);
+			
 			i++;
 		}
 		i = 1;
